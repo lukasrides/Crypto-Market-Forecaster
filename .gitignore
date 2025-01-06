@@ -1,6 +1,9 @@
 # env file
 .env
 
+# csv files
+.csv
+
 # venv
 stockForecasterVenv
 

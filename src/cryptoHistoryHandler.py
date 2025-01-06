@@ -36,22 +36,23 @@ class cryptoHistoryHandler:
             history = pd.concat([history,dataFrame],ignore_index=True)
         history['timestamp'] = pd.to_datetime(history['timestamp'],format='%Y-%m-%d')
         history.sort_values(by='timestamp',inplace=True,ascending=True) 
+        history = history[~history['timestamp'].duplicated(keep='first')]
         history.to_csv(self.savepath) # save to csv
 
+    # method to get the historic data of a specific symbol
     def getHistory(self):
-        history = pd.read_csv(self.savepath,index_col=0)
-        history['timestamp'] = pd.to_datetime(history['timestamp'],format='%Y-%m-%d')
-        history = history.set_index('timestamp')
-        print('Frequency: ',history[timedelta].dt.freq)
-        return history
+        return pd.read_csv(self.savepath, index_col=0)
 
+    # method to set the currently selected symbol
     def setSymbol(self,symbol):
         self.symbol = symbol
         self.savepath = f'src\history\{self.symbol}-{self.timeframe}-history.csv'
     
+    # method to set the currently selected timeframe
     def setTimeframe(self,timeframe):
         self.timeframe = timeframe
     
+    # method to set the currently selected lookback
     def setLookback(self,lookback):
         self.lookback = lookback
 
