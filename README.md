@@ -1,4 +1,4 @@
-# Stock-Market-Forecaster
+# Crypto-Market-Forecaster
 A python command line user interface that can be used to load the historic prices of BTC, ETH, IOTA and XRP and do a 14 day prediction of the price charts using nixtla timeGPT.
 
 ## Installation
