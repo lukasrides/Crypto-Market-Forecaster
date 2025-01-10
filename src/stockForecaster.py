@@ -5,6 +5,9 @@ import warnings
 import os
 import cryptoHistoryHandler as chh
 import inquirer
+from prophet import Prophet
+from prophet.plot import plot_plotly
+import pandas as pd
 
 # Set logging level to ERROR to suppress info and debug messages
 logging.getLogger('nixtla').setLevel(logging.ERROR)
@@ -37,7 +40,18 @@ def setParameters():
 def forecast():
     print('\nForecasting... 📉📈')
     history = cryptoHandler.getHistory()
-    forecast = nixtla_client.forecast(history,
+
+    # create prophet prediction
+    prophetDataFrame = pd.DataFrame(columns=['ds','y'])
+    prophetDataFrame['ds'] = history['timestamp']
+    prophetDataFrame['y'] = history['close']
+    prophet.fit(prophetDataFrame)
+    futureDataFrame = prophet.make_future_dataframe(periods=14) # creates future dataFrame for 14 days ahead
+    prophetForecast = prophet.predict(futureDataFrame)
+    prophetForecast.rename(columns={'ds':'timestamp','yhat':'close'},inplace=True)
+
+    # create nixtla prediction
+    nixtlaForecast = nixtla_client.forecast(history,
                                 h=14,
                                 level=[50,80,90],
                                 time_col='timestamp',
@@ -45,15 +59,26 @@ def forecast():
                                 freq='D'
                                 )
 
-    chart = nixtla_client.plot(history, forecast,
+    # create nixtla plot
+    chartNixtla = nixtla_client.plot(history, nixtlaForecast,
                             level=[50,80,90],
                             time_col='timestamp',
                             target_col='close',
                             max_insample_length=365,
                             engine='plotly') # Plot closing prices
+    # create prophet plot    
+    chartProphet = nixtla_client.plot(history, prophetForecast,
+                        time_col='timestamp',
+                        target_col='close',
+                        max_insample_length=365,
+                        engine='plotly') # Plot closing prices
+    
+    chartNixtla.update_layout(title=f'{cryptoHandler.symbol} Closing Price (TimeGPT)', width=2400, height=1200)
+    chartNixtla.show()
+    chartProphet.update_layout(title=f'{cryptoHandler.symbol} Closing Prices (Prophet)', width=2400, height=1200)
+    chartProphet.show()
 
-    chart.update_layout(title=f'{cryptoHandler.symbol} Closing Prices', width=2400, height=1200)
-    chart.show()
+
     print('\nPlot opened in a browser window. 🚀🌕\n')
 
 
@@ -63,6 +88,8 @@ load_dotenv()
 nixtla_client = NixtlaClient(
     api_key = os.getenv('NIXTLA_API_KEY'),
 )
+
+prophet = Prophet()
 
 # Initialize cryptoHistoryHandler (symbol,timeframe,lookback)
 cryptoHandler = chh.cryptoHistoryHandler('BTC/USDT','1d')
